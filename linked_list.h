@@ -9,7 +9,6 @@
 template <class T>
 class linked_list {
     node<T> *head, *tail; 
-    void destroyList(node<T> *head);
     public:
     linked_list<T>() { //constructor sets head and tail to NULL at creation.
         head = NULL; //first element in the list
@@ -21,19 +20,11 @@ class linked_list {
     void add_head(int id); //only works when the list is empty - the head element shouldnt be changed.
     void add_after(int id, T &data, node<T> *last_n);
     void remove(node<T> *to_remove);
+    void destroyList(node<T> *head);
     node<T>* get_tail() const;
     node<T>* get_head() const;
     class NullArgument{};
 };
-
-template <class T>
-void linked_list<T>::destroyList(node<T> *head) {
-    while (head) {
-        node<T> *next = head->next;
-        delete head;
-        head = next;
-    }
-}
 
 template <class T>
 void linked_list<T>::add_head(int id) {
@@ -79,6 +70,15 @@ void linked_list<T>::remove(node<T> *to_remove) {
             (to_remove->next)->prev = to_remove->prev;
             delete to_remove;
         }
+    }
+}
+
+template <class T>
+void linked_list<T>::destroyList(node<T> *head) {
+    while (head) {
+        node<T> *next = head->next;
+        delete head;
+        head = next;
     }
 }
 

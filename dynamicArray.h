@@ -4,6 +4,7 @@
 template <class T>
 class DynamicArray {
     int size;
+    int capacity; //how much elements in the array currently
     T* array;
 public:
     DynamicArray<T>();
@@ -11,18 +12,22 @@ public:
     DynamicArray<T>(const DynamicArray<T> &original);
     ~DynamicArray<T>();  
     int getSize();
+    int getCapacity();
     void resize(int newSize);
     T& operator[](int index);
+    void insert();
 };
 
 template <class T>
-DynamicArray<T>::DynamicArray(): size(2), array(new T[size]) {}
+DynamicArray<T>::DynamicArray(): size(2),capacity(0), array(new T[size]) {}
 
-DynamicArray<T>::DynamicArray(int size): size(size), array(new T[size]) {}
+template <class T>
+DynamicArray<T>::DynamicArray(int size): size(size),capacity(0), array(new T[size]) {}
 
 template <class T>
 DynamicArray<T>::DynamicArray(const DynamicArray<T> &original) { //copy c'tor
     size  = original.size;
+    capacity = original.capacity;
     array = new T[size];
     for (int i = 0; i < size; i++) {
         array[i] = original.array[i];
@@ -40,6 +45,11 @@ int DynamicArray<T>::getSize() {
 }
 
 template <class T>
+int DynamicArray<T>::getCapacity() {
+    return capacity;
+}
+
+template <class T>
 void DynamicArray<T>::resize(int newSize) {
     T* temp;
     temp = new T[newSize];
@@ -54,6 +64,14 @@ void DynamicArray<T>::resize(int newSize) {
 template <class T>
 T& DynamicArray<T>::operator[](int index) {
     return array[index]; // returned as a reference
+}
+
+template <class T>
+void DynamicArray<T>::insert() {
+    if (capacity == size) {
+        resize(size*2);
+    }
+    capacity++;
 }
 
 #endif
