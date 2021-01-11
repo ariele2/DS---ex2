@@ -10,8 +10,7 @@ class HashChain
     int weight;    // weight factor for the hashing
     int elements_num; // current numbr of elements inside of the hash table 
     // pointer to dynamic array
-    DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>* data; 
-    node<DynamicArray<Tnode_v2*>*>* findCourse(int course_number);
+    DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>* data;
     int hashFunction(int course_number, int module) { 
         return (course_number % module); 
     } 
@@ -24,12 +23,15 @@ public:
     // deletes a key from hash table 
     void deleteCourse(int course_number); 
     // hash function to map values to key 
-    void insertClass(int course_number);
+    int insertClass(int course_number);
+    node<DynamicArray<Tnode_v2*>*>* findCourse(int course_number); 
     void displayHash(); 
     ~HashChain() {
        clearHash();
        delete data;
     }
+    class AllocationError{};
+    class Failure{};
 }; 
   
 HashChain::HashChain(int w) : weight(w), elements_num(0), data(new DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>) {
@@ -44,6 +46,9 @@ void HashChain::insertCourse(int course_number)
     int resize_factor = weight*curr_hash_size;
     if (elements_num == resize_factor) { //need to resize
         DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>* new_data = new DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>(curr_hash_size*2);
+        if (!new_data) {
+            throw AllocationError();
+        }
         for (int j=0; j<curr_hash_size*2; j++) {
             (*new_data)[j].add_head(-1); //add head to all the hash table cells
         }
@@ -62,6 +67,9 @@ void HashChain::insertCourse(int course_number)
     }
     int insert_index = hashFunction(course_number, curr_hash_size);
     DynamicArray<Tnode_v2*>* classes = new DynamicArray<Tnode_v2*>; 
+    if (!classes) {
+        throw AllocationError();
+    }
     (*data)[insert_index].add_after(course_number, classes, (*data)[insert_index].get_tail()); //adds the element to the end of the linked list
     elements_num++;
 } 
@@ -80,6 +88,9 @@ void HashChain::deleteCourse(int course_number)
     //check if the table is 4 times bigger then the elements, if so - should divide its size by 2
     if (curr_hash_size>2 && curr_hash_size>=elements_num*2) { 
         DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>* new_data = new DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>(curr_hash_size/2);
+        if (!new_data) {
+            throw AllocationError();
+        }
         for (int j=0; j<curr_hash_size/2; j++) {
             (*new_data)[j].add_head(-1); //add head to all the hash table cells
         }
@@ -110,12 +121,19 @@ node<DynamicArray<Tnode_v2*>*>* HashChain::findCourse(int course_number) {
     return nullptr;
 }
 
-void HashChain::insertClass(int course_number) {
+int HashChain::insertClass(int course_number) {
     auto course = findCourse(course_number);
-    if (course) {
-        course->data->insert();
-        (*(course->data))[course->data->getCapacity()-1] = nullptr;
+    if (!course) {
+        throw Failure();
     }
+    try {
+        course->data->insert();
+    }
+    catch (DynamicArray<Tnode_v2*>::AllocationError& e) {
+        throw AllocationError();
+    }
+    (*(course->data))[course->data->getCapacity()-1] = nullptr;
+    return course->data->getCapacity()-1;
 }
 
 void HashChain::clearHash() {

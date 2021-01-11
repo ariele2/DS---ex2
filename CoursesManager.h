@@ -1,228 +1,142 @@
 #ifndef COURSES_MANAGER_H
 #define COURSES_MANAGER_H
 #include <stdlib.h>
-#include "d_linked_list.h"
-#include "AVL_v2.h"
+#include "HashChain.h"
+#include "rankedAVL.h"
 
 class CoursesManager {
-    AVL_v2_t<node<AVL_v2_t<AVL_v2_t<int>*>*>**>* coursesData; //avl tree that each node contain array of pointers to nodes, that contains avl of avl trees.
-    d_linked_list<AVL_v2_t<AVL_v2_t<int>*>*>* timeList; //linked list that wach node of it contains avl inside avl.
-    node<AVL_v2_t<AVL_v2_t<int>*>*>* max_time_cell; //pointer to the max time cell in the linked list.
+    HashChain* coursesData;
+    rankedAVL* timeTree;
     public:
     CoursesManager (); //constructor
     ~CoursesManager(); //destructor
-    void AddCourse(int courseID, int numOfClasses);
+    void AddCourse(int courseID);
     void RemoveCourse(int courseID);
+    void AddClass(int courseID, int* classID);
     void WatchClass(int courseID, int classID, int time);
     void TimeViewed(int courseID, int classID, int *timeViewed);
-    void GetMostViewedClasses(int numOfClasses, int *courses, int *classes);
+    void GetIthWatchedClass(int i, int *courseID, int *classID);
     class AllocationError{};
     class InvalidInput{};
     class Failure{};
 };
 
-CoursesManager::CoursesManager(){
-    coursesData = new AVL_v2_t<node<AVL_v2_t<AVL_v2_t<int>*>*>**>();
+CoursesManager::CoursesManager() {
+    coursesData = new HashChain(4);
     if (!coursesData) {
         throw AllocationError();
     }
-    timeList = new d_linked_list<AVL_v2_t<AVL_v2_t<int>*>*>();
-    if (!timeList) {
+    timeTree = new rankedAVL;
+    if (!timeTree) {
         throw AllocationError();
     }
-    timeList->add_head(0); //makes a 0 cell in the time list
-    timeList->get_head()->data = new AVL_v2_t<AVL_v2_t<int>*>();
-    if (!timeList->get_head()->data) {
-        throw AllocationError();
-    }
-    max_time_cell = timeList->get_head(); //sets max to the head
 }
 
 CoursesManager::~CoursesManager() {
-    auto curr_cell = timeList->get_head();
-    while (curr_cell) {
-         for (auto it_coursesList = curr_cell->data->begin(); it_coursesList != curr_cell->data->end(); ++it_coursesList) { //clean inner tree from trees
-            delete (*it_coursesList).data;
-         }
-         delete curr_cell->data; //free the tree in the list
-         curr_cell = curr_cell->next;
-    }
-    for (auto it_coursesData = coursesData->begin(); it_coursesData != coursesData->end(); ++it_coursesData) { //clean the arrays coursesData 
-        delete[] (*it_coursesData).data;
-    }
-    delete timeList;
+    delete timeTree;
     delete coursesData;
 }
 
-void CoursesManager::AddCourse(int courseID, int numOfClasses) {
-    if (coursesData->getNode(courseID)) {
+void CoursesManager::AddCourse(int courseID) {
+    if (coursesData->findCourse(courseID)) {
         throw Failure();
     }
-    auto init_ptr = timeList->get_head(); 
-    //coursesData update
-    node<AVL_v2_t<AVL_v2_t<int>*>*>** classes_tree = new node<AVL_v2_t<AVL_v2_t<int>*>*>*[numOfClasses]; //dont forget to remove them at the destructor!!
-    if (!classes_tree) {
+    try {
+        coursesData->insertCourse(courseID);
+    }
+    catch (HashChain::AllocationError& e) {
         throw AllocationError();
     }
-    for (int i=0; i<numOfClasses; i++) {
-        classes_tree[i] = init_ptr; //sets all the classses to point to the head of the list (cell 0)
-    }
-    coursesData->insert(courseID, classes_tree);
-    //timeList update
-    AVL_v2_t<int>* classes_list = new AVL_v2_t<int>(); //dont forget to remove them at the destructor!!
-    if (!classes_list) {
-        throw AllocationError();
-    }
-    classes_list->makeTree(numOfClasses, numOfClasses);
-    (init_ptr->data)->insert(courseID, classes_list); 
 }
 
 void CoursesManager::RemoveCourse(int courseID) {
-    auto to_remove = coursesData->getNode(courseID);
-    if (!to_remove) {
+    auto remove_course = coursesData->findCourse(courseID);
+    if (!remove_course) {
         throw Failure();
     }
-    //the value of numOfClasses is inside the pointer (to zero)-> linked list-> courses tree-> classes tree ->data (of zero).
-    int numOfClasses = ((to_remove->data[0]->data)->getNode(courseID)->data)->getNode(0)->data;
-    for (int i=0; i<numOfClasses; i++) {
-        auto curr_ptr = to_remove->data[i];
-        if (!curr_ptr) { //if the ptr points to null
-            continue;
-        }
-        else { //its not null
-            auto courseNode_in_list = curr_ptr->data->getNode(courseID);
-            //iterate over the nodes (the classes) inside the course
-            for (auto it = courseNode_in_list->data->begin(); it != courseNode_in_list->data->end(); ++it) {
-                to_remove->data[(*it).id] = nullptr; //updates the cell corresponds to the id inside the array to be null
-            }
-            delete curr_ptr->data->getNode(courseID)->data; //delete the space allocated for the tree inside the tree
-            curr_ptr->data->remove(courseID); //remove the course from the cell of the list that contains the tree
-            if (curr_ptr->data->isEmpty()) { //checks if the cell is now empty
-                //now its time to check if we removed the max time cell
-                if (max_time_cell == curr_ptr && max_time_cell != timeList->get_head()) {
-                    max_time_cell = curr_ptr->prev; //moves max time cell to the previous node of the list
-                }
-                // now we should remove the cell from the list, cause its empty
-                if (curr_ptr != timeList->get_head()) { //we dont want to remove cell 0.
-                    delete curr_ptr->data;
-                    timeList->remove(curr_ptr);
-                }
-            }
+    for (int i=0; i<remove_course->data->getCapacity(); i++) { //iterate over the classes
+        Tnode_v2* curr_cell = (*(remove_course->data))[i];
+        if (curr_cell) {
+            trio remove_key = curr_cell->key;
+            timeTree->remove(remove_key);
         }
     }
-    //now we can remove the node from coursesData as well...
-    delete[] to_remove->data;
-    coursesData->remove(courseID);
+    try {
+        coursesData->deleteCourse(courseID);
+    }
+    catch (HashChain::AllocationError& e) {
+        throw AllocationError();
+    }
+}
+
+void CoursesManager::AddClass(int courseID, int* classID) {
+    try {
+        *classID = coursesData->insertClass(courseID);
+    }
+    catch (HashChain::Failure& e) {
+        throw Failure();
+    }
+    catch (HashChain::AllocationError& e) {
+        throw AllocationError();
+    }
 }
 
 void CoursesManager::WatchClass(int courseID, int classID, int time) {
-    if (!coursesData->getNode(courseID)) {
+    auto course = coursesData->findCourse(courseID);
+    if (!course) {
         throw Failure();
     }
-    auto deep_tree_it = coursesData->getNode(courseID)->data[0]->data->getNode(courseID)->data->begin();
-    int numOfClasses = (*deep_tree_it).data;
-    if (numOfClasses < classID+1) {
+    auto classes_data = course->data;
+    if (classes_data->getCapacity() < classID+1) {
         throw InvalidInput();
     }
-    auto curr_class_time = coursesData->getNode(courseID)->data[classID];
-    int curr_time = curr_class_time->id;
-    //go to the tree, find the course node, then go to the tree inside and remove classID from it
-    curr_class_time->data->getNode(courseID)->data->remove(classID); 
-    bool needs_update = true;
-    if (curr_class_time->data->getNode(courseID)->data->isEmpty()) { //after we removed the node, the tree is empty
-        delete curr_class_time->data->getNode(courseID)->data; //free the allocated space
-        curr_class_time->data->remove(courseID); //remove the course from the tree
-        if(curr_class_time->data->isEmpty() && curr_class_time != timeList->get_head()) { //in case the tree inside the list is empty
-            if (max_time_cell == curr_class_time) {
-                //we just updating the current node in the list 
-                curr_class_time->id += time;
-                AVL_v2_t<int>* new_max_tree = new AVL_v2_t<int>();
-                if (!new_max_tree) {
-                    throw AllocationError();
-                }
-                new_max_tree->insert(classID, numOfClasses);
-                curr_class_time->data->insert(courseID, new_max_tree);
-                needs_update = false;
-            }
-            else {
-                auto temp = curr_class_time->prev;
-                timeList->remove(curr_class_time);
-                curr_class_time = temp;
-            }
+    Tnode_v2* add_to_class = (*classes_data)[classID];
+    if (!add_to_class) { //the class has never been viewed
+        try {
+            timeTree->insert(trio(time, courseID, classID));
+        }
+        catch (rankedAVL::AllocationError& e) {
+            throw AllocationError();
         }
     }
-    while (curr_class_time && needs_update) { //reaches one time ahead.
-        if (!curr_class_time->next || curr_class_time->next->id > time+curr_time) { //we stopped cause it doesnt exist
-            AVL_v2_t<AVL_v2_t<int>*> *new_courses_tree = new AVL_v2_t<AVL_v2_t<int>*>();
-            if (!new_courses_tree) {
-                throw AllocationError();
-            }
-            AVL_v2_t<int>* new_classes_tree = new AVL_v2_t<int>();
-            if (!new_classes_tree) {
-                throw AllocationError();
-            }
-            new_classes_tree->insert(classID, numOfClasses);
-            new_courses_tree->insert(courseID, new_classes_tree);
-            timeList->add_after(curr_time + time, new_courses_tree, curr_class_time);
-            if (!curr_class_time->next->next) {
-                max_time_cell = curr_class_time->next;
-            }
-            needs_update = false;
+    else { //just need to update the time currently viewed
+        int old_time = add_to_class->key.getData1();
+        timeTree->remove(add_to_class->key);
+        try {
+            timeTree->insert(trio(old_time+time, courseID, classID));
         }
-        else if (curr_class_time->next->id == time+curr_time) { //if there is a cell with this time
-            auto courses_tree = curr_class_time->next->data->getNode(courseID);
-            if (!courses_tree) { //there is no such tree for the course yet
-                AVL_v2_t<int>* new_classes_tree = new AVL_v2_t<int>();
-                if (!new_classes_tree) {
-                    throw AllocationError();
-                }
-                new_classes_tree->insert(classID, numOfClasses);
-                curr_class_time->next->data->insert(courseID, new_classes_tree);
-            }
-            else { //the tree exists
-                courses_tree->data->insert(classID, numOfClasses);
-            }
-            needs_update = false;
+        catch (rankedAVL::AllocationError& e) {
+            throw AllocationError();
         }
-        curr_class_time = curr_class_time->next; //keep looking
     }
-    coursesData->getNode(courseID)->data[classID] = curr_class_time;
 }
 
 void CoursesManager::TimeViewed(int courseID, int classID, int* timeViewed) {
-    if (!coursesData->getNode(courseID)) {
+    auto course = coursesData->findCourse(courseID);
+    if (!course) {
         throw Failure();
     }
-    auto deep_tree_it = coursesData->getNode(courseID)->data[0]->data->getNode(courseID)->data->begin(); //iterator to the beinning of the second tree
-    int numOfClasses = (*deep_tree_it).data;
-    if (numOfClasses < classID+1) {
+    auto classes_data = course->data;
+    if (classes_data->getCapacity() < classID+1) {
         throw InvalidInput();
     }
-    auto curr_class_time = coursesData->getNode(courseID)->data[classID];
-    *timeViewed = curr_class_time->id;
+    Tnode_v2* viewed_class = (*classes_data)[classID];
+    if (!viewed_class) {//its null
+        *timeViewed = 0;
+    }
+    else {
+        *timeViewed = (viewed_class->key).getData1();
+    }
 }
 
-void CoursesManager::GetMostViewedClasses(int numOfClasses, int *courses, int *classes) {
-    if (numOfClasses <= 0) {
-        throw InvalidInput();
-    }
-    int i=0;
-    auto curr_cell = max_time_cell;
-    while (curr_cell) {
-        for (auto it_courses = curr_cell->data->begin(); it_courses != curr_cell->data->end(); ++it_courses) {
-            for (auto it_classes = (*it_courses).data->begin(); it_classes != (*it_courses).data->end(); ++it_classes) {
-                courses[i] = (*it_courses).id;
-                classes[i] = (*it_classes).id;
-                i++;
-                if (i == numOfClasses) {
-                    return;
-                }
-            }
-        }
-        curr_cell = curr_cell->prev;
-    }
-    if (i+1 < numOfClasses) { 
+void CoursesManager::GetIthWatchedClass(int i, int *courseID, int *classID) {
+    trio ith_watched_class = timeTree->findIBiggest(i);
+    if (ith_watched_class == trio(-1,-1,-1)) {
         throw Failure();
+    }
+    else {
+        *courseID = ith_watched_class.getData2();
+        *classID = ith_watched_class.getData3();
     }
 }
 

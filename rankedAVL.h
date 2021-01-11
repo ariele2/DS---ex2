@@ -25,8 +25,7 @@ class rankedAVL {
     std::shared_ptr<Tnode_v2> leftRightRotate(std::shared_ptr<Tnode_v2> to_rotate); //first rotate to the left then to the right
     std::shared_ptr<Tnode_v2> rightLeftRotate(std::shared_ptr<Tnode_v2> to_rotate); //first rotate to the right then to the left
     std::shared_ptr<Tnode_v2> insert(trio key, std::shared_ptr<Tnode_v2> root); //insert a id-data element to the tree keeping it balanced
-    std::shared_ptr<Tnode_v2> remove(trio key, std::shared_ptr<Tnode_v2> root); //remove a id-data element by id from the tree, keeping it balanced
-    //std::shared_ptr<Tnode_v2> getNodeById(int id, std::shared_ptr<Tnode_v2> root); 
+    std::shared_ptr<Tnode_v2> remove(trio key, std::shared_ptr<Tnode_v2> root); //remove a id-data element by id from the tree, keeping it balanced 
     void inorder(std::shared_ptr<Tnode_v2> root); //makes inorder search on the tree
     void preorder(std::shared_ptr<Tnode_v2> root); //for debugging purpose only!
     void clearTree(std::shared_ptr<Tnode_v2> root); //clears all the tree, called by the destructor.
@@ -41,8 +40,9 @@ class rankedAVL {
     void printPreorder(); //for debugging purpose only!
     void insert(trio key);
     void remove(trio key);
-    //std::shared_ptr<Tnode_v2> getNode(int id);
+    trio findIBiggest(int i);
     bool isEmpty(); //return true if the tree is empty
+    class AllocationError{};
 };
 
 void rankedAVL::updateRank(std::shared_ptr<Tnode_v2> root) {
@@ -70,23 +70,6 @@ int rankedAVL::height(std::shared_ptr<Tnode_v2> t) {
     }
     return t->height;
 }
-
-/*
-template <class T>
-std::shared_ptr<Tnode_v2> rankedAVL::getNodeById(int id, std::shared_ptr<Tnode_v2> root) {
-    if (!root) {
-        return nullptr;
-    }
-    else if (root->id == id) {
-        return root;
-    }
-    else if (id < root->id) { 
-        return getNodeById(id, root->left);
-    }
-    else { //id > root->id
-        return getNodeById(id, root->right);
-    }
-}*/
 
 void rankedAVL::inorder(std::shared_ptr<Tnode_v2> root) {
     if (!root) {
@@ -165,6 +148,9 @@ std::shared_ptr<Tnode_v2> rankedAVL::rightLeftRotate(std::shared_ptr<Tnode_v2> t
 std::shared_ptr<Tnode_v2> rankedAVL::insert(trio key, std::shared_ptr<Tnode_v2> root) {
     if (!root) { //if we reached a place with no such id then:
         root = std::shared_ptr<Tnode_v2>(new Tnode_v2()) ; //makes all the ptrs shared ones - no memory leaks.
+        if (!root) {
+            throw AllocationError();
+        }
         root->key = key;
         root->height = 0;
         root->rank = 1;
@@ -328,11 +314,24 @@ void rankedAVL::remove(trio key) {
     root = remove(key, root);
 }
 
-/*
-template <class T>
-std::shared_ptr<Tnode_v2> rankedAVL::getNode(int id) {
-    return getNodeById(id, root);
-}*/
+trio rankedAVL::findIBiggest(int i) {
+    if (i>root->rank) {
+        return trio(-1,-1,-1);
+    }
+    while (i>0) {
+        if (i-1 == root->right->rank) {
+            return root->key;
+        }
+        else if (i-1 < root->right->rank) {
+            root = root->right;
+        }
+        else {
+            i = i-root->right->rank-1;
+            root = root->left;
+        }
+    }
+    return trio(-1,-1,-1); //shouldnt reach here...
+}
 
 bool rankedAVL::isEmpty() {
     if (!root) {
