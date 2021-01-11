@@ -1,6 +1,6 @@
 #include "trio.h"
 
-trio::trio(int d1, int d2, int d3): data1(d1),data2(d2),data3(d3) {};
+trio::trio(int d1, int d2, int d3): data1(d1),data2(d2),data3(d3) {}
 
 bool operator<(const trio &t1, const trio &t2) {
     if (t1.data1 < t2.data1) {

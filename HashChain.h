@@ -28,6 +28,7 @@ public:
     void displayHash(); 
     ~HashChain() {
        clearHash();
+       delete data;
     }
 }; 
   
@@ -77,7 +78,7 @@ void HashChain::deleteCourse(int course_number)
     (*data)[remove_index].remove(course);
     elements_num--;
     //check if the table is 4 times bigger then the elements, if so - should divide its size by 2
-    if (curr_hash_size>2 && curr_hash_size>=elements_num*4) { 
+    if (curr_hash_size>2 && curr_hash_size>=elements_num*2) { 
         DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>* new_data = new DynamicArray<linked_list<DynamicArray<Tnode_v2*>*>>(curr_hash_size/2);
         for (int j=0; j<curr_hash_size/2; j++) {
             (*new_data)[j].add_head(-1); //add head to all the hash table cells
@@ -134,13 +135,10 @@ void HashChain::displayHash() {
         std::cout << "index:" << i << std::endl; 
         std::cout << "elements:";
         node<DynamicArray<Tnode_v2*>*>* course = (*data)[i].get_tail();
-        int classes_num = course->data->getCapacity();
         while (course->id != -1) {
+            int classes_num = course->data->getCapacity();
             std::cout << " --> " << "course:" << course->id <<", classes:" << classes_num;
             course = course->prev;
-            if (course->id != -1) {
-                classes_num = course->data->getCapacity();
-            }
         }
         std::cout<<std::endl;
     } 
