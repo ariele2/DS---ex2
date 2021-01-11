@@ -29,6 +29,7 @@ class rankedAVL {
     void inorder(std::shared_ptr<Tnode_v2> root); //makes inorder search on the tree
     void preorder(std::shared_ptr<Tnode_v2> root); //for debugging purpose only!
     void clearTree(std::shared_ptr<Tnode_v2> root); //clears all the tree, called by the destructor.
+    std::shared_ptr<Tnode_v2> getNodeByKey(trio key, std::shared_ptr<Tnode_v2> root);
     public:
     rankedAVL() { //initialize root and smallest node to nullptr
         root = nullptr;
@@ -41,6 +42,7 @@ class rankedAVL {
     void insert(trio key);
     void remove(trio key);
     trio findIBiggest(int i);
+    std::shared_ptr<Tnode_v2> getKey(trio key);
     bool isEmpty(); //return true if the tree is empty
     class AllocationError{};
 };
@@ -275,6 +277,21 @@ std::shared_ptr<Tnode_v2> rankedAVL::remove(trio key, std::shared_ptr<Tnode_v2> 
     return root;
 }
 
+std::shared_ptr<Tnode_v2> rankedAVL::getNodeByKey(trio key, std::shared_ptr<Tnode_v2> root) {
+    if (!root) {
+        return nullptr;
+    }
+    else if (root->key == key) {
+        return root;
+    }
+    else if (key < root->key) { 
+        return getNodeByKey(key, root->left);
+    }
+    else { //key > root->key
+        return getNodeByKey(key, root->right);
+    }
+}
+
 void rankedAVL::clearTree(std::shared_ptr<Tnode_v2> root) { //post order traversal
     if (!root) {
         return;
@@ -315,22 +332,32 @@ void rankedAVL::remove(trio key) {
 }
 
 trio rankedAVL::findIBiggest(int i) {
-    if (i>root->rank) {
+    std::shared_ptr<Tnode_v2> it = root;
+    if (i>it->rank) {
         return trio(-1,-1,-1);
     }
     while (i>0) {
-        if (i-1 == root->right->rank) {
-            return root->key;
+        if (it->right && i-1 == it->right->rank) {
+            return it->key;
         }
-        else if (i-1 < root->right->rank) {
-            root = root->right;
+        else if(!it->right && !it->left) {
+            return it->key;
+        }
+        else if (it->right && i-1 < it->right->rank) {
+            it = it->right;
         }
         else {
-            i = i-root->right->rank-1;
-            root = root->left;
+            if (it->right) {
+                i = i-it->right->rank-1;
+            }
+            it = it->left;
         }
     }
     return trio(-1,-1,-1); //shouldnt reach here...
+}
+
+std::shared_ptr<Tnode_v2> rankedAVL::getKey(trio key) {
+    return getNodeByKey(key, root);
 }
 
 bool rankedAVL::isEmpty() {
