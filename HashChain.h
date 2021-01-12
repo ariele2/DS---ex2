@@ -85,7 +85,7 @@ void HashChain::deleteCourse(int course_number)
     delete course->data;
     (*data)[remove_index].remove(course);
     elements_num--;
-    //check if the table is 4 times bigger then the elements, if so - should divide its size by 2
+    //check if the table is 2 times bigger then the elements, if so - should divide its size by 2
     if (curr_hash_size>2 && curr_hash_size>=elements_num*2) { 
         DynamicArray<linked_list<DynamicArray<std::shared_ptr<Tnode_v2>>*>>* new_data = new DynamicArray<linked_list<DynamicArray<std::shared_ptr<Tnode_v2>>*>>(curr_hash_size/2);
         if (!new_data) {

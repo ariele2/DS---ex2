@@ -30,6 +30,7 @@ class rankedAVL {
     void preorder(std::shared_ptr<Tnode_v2> root); //for debugging purpose only!
     void clearTree(std::shared_ptr<Tnode_v2> root); //clears all the tree, called by the destructor.
     std::shared_ptr<Tnode_v2> getNodeByKey(trio key, std::shared_ptr<Tnode_v2> root);
+    static int calcRank(std::shared_ptr<Tnode_v2> t);
     public:
     rankedAVL() { //initialize root and smallest node to nullptr
         root = nullptr;
@@ -89,6 +90,13 @@ void rankedAVL::preorder(std::shared_ptr<Tnode_v2> root) {
     std::cout << "(" << root->key.getData1() << "," << root->key.getData2() << "," << root->key.getData3() << ") " << " rank:" << root->rank << "; "; //do something
     preorder(root->left); //go to the left
     preorder(root->right); //go to the right
+}
+
+int rankedAVL::calcRank(std::shared_ptr<Tnode_v2> t) {
+    if (!t) {
+        return 0;
+    }
+    return t->rank;
 }
 
 std::shared_ptr<Tnode_v2> rankedAVL::findMinSubTree(std::shared_ptr<Tnode_v2> root) {//returns the minimum element inside a sub tree
@@ -333,23 +341,18 @@ void rankedAVL::remove(trio key) {
 
 trio rankedAVL::findIBiggest(int i) {
     std::shared_ptr<Tnode_v2> it = root;
-    if (i>it->rank) {
+    if (i>calcRank(it)) {
         return trio(-1,-1,-1);
     }
     while (i>0) {
-        if (it->right && i-1 == it->right->rank) {
+        if (i-1 == calcRank(it->right)) {
             return it->key;
         }
-        else if(!it->right && !it->left) {
-            return it->key;
-        }
-        else if (it->right && i-1 < it->right->rank) {
+        else if (i-1 < calcRank(it->right)) {
             it = it->right;
         }
         else {
-            if (it->right) {
-                i = i-it->right->rank-1;
-            }
+            i = i - calcRank(it->right) -1;
             it = it->left;
         }
     }

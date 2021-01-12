@@ -109,7 +109,7 @@ void CoursesManager::WatchClass(int courseID, int classID, int time) {
         catch (rankedAVL::AllocationError& e) {
             throw AllocationError();
         }
-        (*classes_data)[classID] = timeTree->getKey(trio(time, courseID, classID));
+        (*classes_data)[classID] = timeTree->getKey(trio(time+old_time, courseID, classID));
     }
 }
 
