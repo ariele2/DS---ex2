@@ -266,7 +266,7 @@ std::shared_ptr<Tnode_v2> rankedAVL::remove(trio key, std::shared_ptr<Tnode_v2> 
     // rotations!!! (if needed)
     if ((height(root->left)-height(root->right)) >= 2 ) { //the left side is unbalanced
         //check wether the problem is at the left or right side
-        if (height((root->left)->left) - height((root->left)->right) == 1) {
+        if (height((root->left)->left) - height((root->left)->right) >= 0) { //==1
             root = rightRotate(root);
         }
         else { //case the balance factor = 0 or -1.
@@ -275,7 +275,7 @@ std::shared_ptr<Tnode_v2> rankedAVL::remove(trio key, std::shared_ptr<Tnode_v2> 
     }
     else if ((height(root->left)-height(root->right)) <= -2) {
         //check wether the problem is at the left or right side
-        if (height((root->right)->left) - height((root->right)->right) == -1) {
+        if (height((root->right)->left) - height((root->right)->right) <= 0) { //==-1
             root = leftRotate(root);
         }
         else { //case the balance factor = 0 or -1.

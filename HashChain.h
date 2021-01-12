@@ -44,7 +44,15 @@ void HashChain::insertCourse(int course_number)
 { 
     int curr_hash_size = data->getSize();
     int resize_factor = weight*curr_hash_size;
-    if (elements_num == resize_factor) { //need to resize
+    int insert_index = hashFunction(course_number, curr_hash_size);
+    DynamicArray<int>* classes = new DynamicArray<int>; 
+    if (!classes) {
+        throw AllocationError();
+    }
+    (*data)[insert_index].add_after(course_number, classes, (*data)[insert_index].get_tail()); //adds the element to the end of the linked list
+    elements_num++;
+    if (elements_num >= resize_factor) { //need to resize
+        //std::cout << "---------------resizing-----------------" << std::endl;
         DynamicArray<linked_list<DynamicArray<int>*>>* new_data = new DynamicArray<linked_list<DynamicArray<int>*>>(curr_hash_size*2);
         if (!new_data) {
             throw AllocationError();
@@ -65,13 +73,6 @@ void HashChain::insertCourse(int course_number)
         delete data;
         data = new_data;
     }
-    int insert_index = hashFunction(course_number, curr_hash_size);
-    DynamicArray<int>* classes = new DynamicArray<int>; 
-    if (!classes) {
-        throw AllocationError();
-    }
-    (*data)[insert_index].add_after(course_number, classes, (*data)[insert_index].get_tail()); //adds the element to the end of the linked list
-    elements_num++;
 } 
   
 void HashChain::deleteCourse(int course_number) 
