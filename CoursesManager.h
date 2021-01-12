@@ -55,9 +55,9 @@ void CoursesManager::RemoveCourse(int courseID) {
         throw Failure();
     }
     for (int i=0; i<remove_course->data->getCapacity(); i++) { //iterate over the classes
-        std::shared_ptr<Tnode_v2> curr_cell = (*(remove_course->data))[i];
-        if (curr_cell) {
-            trio remove_key = curr_cell->key;
+        int curr_time = (*(remove_course->data))[i];
+        if (curr_time) {
+            trio remove_key(curr_time, courseID, i);
             timeTree->remove(remove_key);
         }
     }
@@ -90,26 +90,25 @@ void CoursesManager::WatchClass(int courseID, int classID, int time) {
     if (classes_data->getCapacity() < classID+1) {
         throw InvalidInput();
     }
-    std::shared_ptr<Tnode_v2> add_to_class = (*classes_data)[classID];
-    if (!add_to_class) { //the class has never been viewed
+    int curr_class_time = (*classes_data)[classID];
+    if (curr_class_time == 0) { //the class has never been viewed
         try {
             timeTree->insert(trio(time, courseID, classID));
         }
         catch (rankedAVL::AllocationError& e) {
             throw AllocationError();
         }
-        (*classes_data)[classID] = timeTree->getKey(trio(time, courseID, classID));
+        (*classes_data)[classID] = time;
     }
     else { //just need to update the time currently viewed
-        int old_time = add_to_class->key.getData1();
-        timeTree->remove(add_to_class->key);
+        timeTree->remove(trio(curr_class_time, courseID, classID));
         try {
-            timeTree->insert(trio(old_time+time, courseID, classID));
+            timeTree->insert(trio(curr_class_time+time, courseID, classID));
         }
         catch (rankedAVL::AllocationError& e) {
             throw AllocationError();
         }
-        (*classes_data)[classID] = timeTree->getKey(trio(time+old_time, courseID, classID));
+        (*classes_data)[classID] = curr_class_time+time;
     }
 }
 
@@ -122,13 +121,7 @@ void CoursesManager::TimeViewed(int courseID, int classID, int* timeViewed) {
     if (classes_data->getCapacity() < classID+1) {
         throw InvalidInput();
     }
-    std::shared_ptr<Tnode_v2> viewed_class = (*classes_data)[classID];
-    if (!viewed_class) {//its null
-        *timeViewed = 0;
-    }
-    else {
-        *timeViewed = (viewed_class->key).getData1();
-    }
+    *timeViewed = (*classes_data)[classID];
 }
 
 void CoursesManager::GetIthWatchedClass(int i, int *courseID, int *classID) {
