@@ -199,7 +199,7 @@ std::shared_ptr<Tnode_v2> rankedAVL::insert(trio key, std::shared_ptr<Tnode_v2> 
             (root->right)->parent = root; //update it to its parent
         }
     }
-    else if (root->left) {
+    if (root->left) {
         if (!((root->left)->parent)) { //same as right
             (root->left)->parent = root;
         }
