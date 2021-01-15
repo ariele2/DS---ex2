@@ -16,7 +16,7 @@ bool operator<(const trio &t1, const trio &t2) {
 }
 
 bool operator==(const trio &t1, const trio &t2) {
-    return (t1.data1==t2.data1 && t1.data2==t2.data2 && t1.data2==t2.data2);
+    return (t1.data1==t2.data1 && t1.data2==t2.data2 && t1.data3==t2.data3);
 }
 
 bool operator>(const trio &t1, const trio &t2) {
